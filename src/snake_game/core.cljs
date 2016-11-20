@@ -19,16 +19,16 @@
       (rand-nth free-positions))))
 
 (def snake {:direction [1 0]
-            :body [[3 2] [2 2] [1 2] [0 2]]})
+            :body      [[4 2] [3 2] [2 2] [1 2] [0 2]]})
 
 
-(def initial-state {:board board
-                    :snake snake
-                    :point (rand-free-position snake, board)
-                    :points 0
-                    :game-running? true
+(def initial-state {:board             board
+                    :snake             snake
+                    :point             (rand-free-position snake, board)
+                    :points            0
+                    :game-running?     true
                     :direction-changed false
-                    :stored-direction false})
+                    :stored-direction  false})
 
 (register-handler
   :initialize
@@ -50,10 +50,20 @@
 (regsub :point)
 (regsub :game-running?)
 
+(defn valid-head
+  "Change the value of the head if it may run out of the board"
+  [head board]
+  (cond
+    (= (first head) -1) [(- (first board) 1) (second head)]
+    (= (first head) (first board)) [0 (second head)]
+    (= (second head) -1) [(first head) (- (second board) 1)]
+    (= (second head) (second board)) [(first head) 0]
+    :else head))
+
 (defn move-snake
   "Move the whole snake positions and directions of all snake elements"
   [{:keys [direction body] :as snake}]
-  (let [head-new-position (mapv + direction (first body))]
+  (let [head-new-position (valid-head (mapv + direction (first body)) board) ]
     (update-in snake [:body] #(into [] (drop-last (cons head-new-position body))))))
 
 (def key-code->move
@@ -71,19 +81,14 @@
                               (dispatch [:change-direction (key-code->move key-code)]))))))
 
 (defonce snake-moving
-         (js/setInterval #(dispatch [:next-state]) 150))
+         (js/setInterval #(dispatch [:next-state]) 50))
 
 (defn collisions
-  "Check that the snake head doesn't get out of the board"
-  [snake board]
+  "Todo this should be changed to check if the head isn't hitting another snake."
+  [snake]
   (let [head (first (:body snake))
         body (rest (:body snake))]
-    (cond
-      (some #(= head %) body) true
-      (= (first head) -1) true
-      (= (first head) (first board)) true
-      (= (second head) 0) true
-      (= (second head) (second board)) true)))
+    (some #(= head %) body)))
 
 (defn grow-snake
   "Computes a value for the tail position and returns whole snake"
@@ -129,7 +134,7 @@
   (fn
     [{:keys [snake board] :as db} _]
     (if (:game-running? db)
-      (if (collisions snake board)
+      (if (collisions snake)
         (assoc-in db [:game-running?] false)
         (-> db
             (pop-stored-direction)
@@ -157,7 +162,7 @@
                               (snake-positions current-pos) [:td.snake-on-cell]
                               :else [:td.cell]))))]
         (into [:table.stage {:style {:height 637
-                                     :width 1027}}]
+                                     :width  1027}}]
               cells)))))
 
 (defn score
