@@ -1,9 +1,9 @@
 # snake-game
 
-What better way to learn ClojureScript? :)
+I wanted to try something out with clojure, clojurescript, and also vert.x. I will try to change the original project to run on a server and multiple clients which can connect. A simple front-end on the server will make it possible to start/reset/resize the game as it runs.
 
-This is based on a tutorial at http://lambdax.io/blog/posts/2016-01-19-snake-game-part-1.html, 
-and this is mostly not my work, so please redirect most of the credit that way...
+The forked repo was based on a tutorial at http://lambdax.io/blog/posts/2016-01-19-snake-game-part-1.html.
+For now very little of this is my own work/addition.
 
 ## Setup
 
