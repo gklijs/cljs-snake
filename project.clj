@@ -32,7 +32,7 @@
                            ;; in the default browser once Figwheel has
                            ;; started and complied your application.
                            ;; Comment this out once it no longer serves you.
-                           :open-urls ["http://localhost:63342/snake-game/public/index.html"]}
+                           :open-urls ["http://localhost:63342/cljs-snake/snake-game/public/index.html"]}
 
                 :compiler {:main snake-game.core
                            :asset-path "js/compiled/out"

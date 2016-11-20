@@ -6,7 +6,7 @@
 
 (enable-console-print!)
 
-(def board [15 10])
+(def board [150 100])
 
 (defn rand-free-position
   "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
@@ -156,8 +156,8 @@
                               (= current-pos current-point) [:td.point]
                               (snake-positions current-pos) [:td.snake-on-cell]
                               :else [:td.cell]))))]
-        (into [:table.stage {:style {:height 337
-                                     :width 527}}]
+        (into [:table.stage {:style {:height 637
+                                     :width 1027}}]
               cells)))))
 
 (defn score
