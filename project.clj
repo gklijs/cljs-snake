@@ -6,15 +6,15 @@
 
   :min-lein-version "2.6.1"
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.8.51"]
-                 [org.clojure/core.async "0.2.374"
+  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
+                 [org.clojure/clojurescript "1.9.293"]
+                 [org.clojure/core.async "0.2.395"
                   :exclusions [org.clojure/tools.reader]]
-                  [reagent "0.5.0"]
-                  [re-frame "0.6.0"]]
+                  [reagent "0.6.0"]
+                  [re-frame "0.8.0"]]
 
-  :plugins [[lein-figwheel "0.5.4-3"]
-            [lein-cljsbuild "1.1.3" :exclusions [[org.clojure/clojure]]]]
+  :plugins [[lein-figwheel "0.5.8"]
+            [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
 
@@ -32,7 +32,7 @@
                            ;; in the default browser once Figwheel has
                            ;; started and complied your application.
                            ;; Comment this out once it no longer serves you.
-                           :open-urls ["http://localhost:3449/index.html"]}
+                           :open-urls ["http://localhost:63342/snake-game/public/index.html"]}
 
                 :compiler {:main snake-game.core
                            :asset-path "js/compiled/out"
@@ -91,7 +91,7 @@
   ;; https://github.com/bhauman/lein-figwheel/wiki/Using-the-Figwheel-REPL-within-NRepl
 
 
-  :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.4-3"]
+  :profiles {:dev {:dependencies [[figwheel-sidecar "0.5.8"]
                                   [com.cemerick/piggieback "0.2.1"]]
                    ;; need to add dev source path here to get user.clj loaded
                    :source-paths ["src" "dev"]
