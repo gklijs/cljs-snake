@@ -6,25 +6,27 @@
 
 (enable-console-print!)
 
-(def board [150 100])
+(def board [75 50])
 
 (defn rand-free-position
   "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
-  [snake [x y]]
-  (let [snake-positions-set (into #{} (:body snake))
+  [snake locations [x y]]
+  (let [positions-set (conj  (into #{} (:body snake)) locations)
         board-positions (for [x-pos (range x)
                               y-pos (range y)]
                           [x-pos y-pos])]
-    (when-let [free-positions (seq (remove snake-positions-set board-positions))]
+    (when-let [free-positions (seq (remove positions-set board-positions))]
       (rand-nth free-positions))))
 
 (def snake {:direction [1 0]
-            :body      [[4 2] [3 2] [2 2] [1 2] [0 2]]})
+            :body      [[5 2] [4 2] [3 2] [2 2] [1 2] [0 2]]})
 
+(def sweets {:max-number 20
+             :locations []})
 
 (def initial-state {:board             board
                     :snake             snake
-                    :point             (rand-free-position snake, board)
+                    :sweets            sweets
                     :points            0
                     :game-running?     true
                     :direction-changed false
@@ -45,9 +47,9 @@
       (reaction (field @db)))))
 
 (regsub :board)
+(regsub :sweets)
 (regsub :points)
 (regsub :snake)
-(regsub :point)
 (regsub :game-running?)
 
 (defn valid-head
@@ -84,7 +86,7 @@
          (js/setInterval #(dispatch [:next-state]) 50))
 
 (defn collisions
-  "Todo this should be changed to check if the head isn't hitting another snake."
+  "Todo this should be changed to check if the head isn't hitting another snake, itself is fine."
   [snake]
   (let [head (first (:body snake))
         body (rest (:body snake))]
@@ -97,16 +99,29 @@
     (let [direction (mapv - (second last-2) (first last-2))]
       (assoc snake :body (conj body (mapv + (last body) direction))))))
 
+(defn remove-sweet
+  "Remove a certain sweet cause it's been eaten"
+  [{:keys [locations] :as sweets} sweet]
+  (assoc sweets :locations (remove #{sweet} locations)))
+
 (defn process-movement
   "Handles movement stuff"
-  [{:keys [snake point board] :as db-before}]
-  (let [db (assoc db-before :direction-changed false)]
-    (if (= (first (:body snake)) point)
+  [{:keys [snake sweets] :as db-before}]
+  (let [db (assoc db-before :direction-changed false)
+        sweet (some #{(first (:body snake))}  (:locations sweets))]
+    (if sweet
       (-> db
           (update :snake grow-snake)
           (update :points inc)
-          (assoc :point (rand-free-position snake board)))
+          (update :sweets remove-sweet sweet))
       db)))
+
+(defn handle-sweets
+  "Adds new sweet if there are less sweets than the max number, removes the oldest one otherwhise"
+  [{:keys [max-number locations] :as sweets} snake board]
+  (if (> max-number (count locations))
+    (update-in sweets [:locations] #(conj locations (rand-free-position snake locations board)))
+    (update-in sweets [:locations] #(remove #{(last locations)}  locations))))
 
 (defn pop-stored-direction
   [{:keys [stored-direction direction-changed] :as db}]
@@ -140,7 +155,8 @@
             (pop-stored-direction)
             (update :snake move-snake)
             (as-> after-move
-                  (process-movement after-move))))
+                  (process-movement after-move))
+            (update :sweets handle-sweets :snake board)))
       db)))
 
 (defn render-board
@@ -148,17 +164,17 @@
   []
   (let [board (subscribe [:board])
         snake (subscribe [:snake])
-        point (subscribe [:point])]
+        sweets (subscribe [:sweets])]
     (fn []
       (let [[width height] @board
             snake-positions (into #{} (:body @snake))
-            current-point @point
+            sweet-positions (into #{} (:locations @sweets))
             cells (for [y (range height)]
                     (into [:tr]
                           (for [x (range width)
                                 :let [current-pos [x y]]]
                             (cond
-                              (= current-pos current-point) [:td.point]
+                              (sweet-positions current-pos) [:td.sweet]
                               (snake-positions current-pos) [:td.snake-on-cell]
                               :else [:td.cell]))))]
         (into [:table.stage {:style {:height 637
