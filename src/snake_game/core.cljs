@@ -11,12 +11,12 @@
 (defn rand-free-position
   "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
   [snake locations [x y]]
-  (let [positions-set (conj  (into #{} (:body snake)) locations)
+  (let [positions-set (concat  (into #{} (:body snake)) locations)
         board-positions (for [x-pos (range x)
                               y-pos (range y)]
-                          [x-pos y-pos])]
-    (when-let [free-positions (seq (remove positions-set board-positions))]
-      (rand-nth free-positions))))
+                          [x-pos y-pos])
+        free-position? (atom (rand-nth board-positions))]
+        (while (some #(= @free-position? %) positions-set)(reset! free-position? (rand-nth board-positions)))@free-position?))
 
 (def snake {:direction [1 0]
             :body      [[5 2] [4 2] [3 2] [2 2] [1 2] [0 2]]})
