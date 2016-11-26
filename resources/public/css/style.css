@@ -22,7 +22,7 @@ body {
     color: rgba(255, 255, 255, 0.5);
     font-size: 20px;
     font-weight: bold;
-    padding-top: 20px;
+    padding-top: 2%;
     text-align: center;
 }
 
@@ -37,15 +37,24 @@ body {
 }
 
 .cell {
-    background-color: rgba(0, 0, 0, 0.15);;
+    background-color: rgba(0, 0, 0, 0.15);
 }
 
 .snake-on-cell {
     background-color: #e30b5c;
+
 }
 
 .sweet {
     background-color: rgb(119, 255, 51);
+    border-radius: 100%;
+}
+
+.board-element {
+    padding-left: 2%;
+    padding-right: 0;
+    padding-top: 2%;
+    padding-bottom: 0;
 }
 
 .overlay {

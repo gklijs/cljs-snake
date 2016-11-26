@@ -6,7 +6,7 @@
 
 (enable-console-print!)
 
-(def board [75 50])
+(def board [50 40])
 
 (defn rand-free-position
   "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
@@ -21,7 +21,7 @@
 (def snake {:direction [1 0]
             :body      [[5 2] [4 2] [3 2] [2 2] [1 2] [0 2]]})
 
-(def sweets {:max-number 20
+(def sweets {:max-number 10
              :locations []})
 
 (def initial-state {:board             board
@@ -170,15 +170,14 @@
             snake-positions (into #{} (:body @snake))
             sweet-positions (into #{} (:locations @sweets))
             cells (for [y (range height)]
-                    (into [:tr]
+                    (into [:div.row.flex-items-xs-center]
                           (for [x (range width)
                                 :let [current-pos [x y]]]
                             (cond
-                              (sweet-positions current-pos) [:td.sweet]
-                              (snake-positions current-pos) [:td.snake-on-cell]
-                              :else [:td.cell]))))]
-        (into [:table.stage {:style {:height 637
-                                     :width  1027}}]
+                              (sweet-positions current-pos) [:div.col-xs.board-element.sweet]
+                              (snake-positions current-pos) [:div.col-xs.board-element.snake-on-cell]
+                              :else [:div.col-xs.board-element.cell]))))]
+        (into [:div.container]
               cells)))))
 
 (defn score
@@ -205,8 +204,8 @@
   "The main rendering function"
   []
   [:div
-   [render-board]
    [score]
+   [render-board]
    [game-over]])
 
 (defn run
