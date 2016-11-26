@@ -8,6 +8,11 @@
 
 (def board [50 40])
 
+(defn logjs
+    "This function prints an argument to the js console"
+    [argument]
+    (.log js/console (clj->js argument)))
+
 (defn rand-free-position
   "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
   [snake locations [x y]]
@@ -16,12 +21,13 @@
                               y-pos (range y)]
                           [x-pos y-pos])
         free-position? (atom (rand-nth board-positions))]
-        (while (some #(= @free-position? %) positions-set)(reset! free-position? (rand-nth board-positions)))@free-position?))
+        (while (some #(= @free-position? %) positions-set)(reset! free-position? (rand-nth board-positions)))
+        @free-position?))
 
 (def snake {:direction [1 0]
             :body      [[5 2] [4 2] [3 2] [2 2] [1 2] [0 2]]})
 
-(def sweets {:max-number 10
+(def sweets {:max-number 20
              :locations []})
 
 (def initial-state {:board             board
@@ -156,7 +162,7 @@
             (update :snake move-snake)
             (as-> after-move
                   (process-movement after-move))
-            (update :sweets handle-sweets :snake board)))
+            (update :sweets handle-sweets snake board)))
       db)))
 
 (defn render-board
