@@ -14,7 +14,7 @@
     (.log js/console (clj->js argument)))
 
 (defn rand-free-position
-  "This function takes the snake and the board-size as arguments, and returns a random position not colliding with the snake body"
+  "This function takes the snake, locations of the sweets and the board-size as arguments, and returns a random position not colliding with the snake body or sweets"
   [snake locations [x y]]
   (let [positions-set (concat  (into #{} (:body snake)) locations)
         board-positions (for [x-pos (range x)
@@ -24,14 +24,45 @@
         (while (some #(= @free-position? %) positions-set)(reset! free-position? (rand-nth board-positions)))
         @free-position?))
 
+(defn valid-head
+  "Change the value of the head if it may run out of the board"
+  [head board]
+  (cond
+    (= (first head) -1) [(- (first board) 1) (second head)]
+    (= (first head) (first board)) [0 (second head)]
+    (= (second head) -1) [(first head) (- (second board) 1)]
+    (= (second head) (second board)) [(first head) 0]
+    :else head))
+
+(defn grow-snake
+  "Computes a value for the tail position and returns whole snake"
+  [{:keys [body] :as snake}]
+  (let [last-2 (take-last 2 body)]
+    (let [direction (mapv - (second last-2) (first last-2))]
+      (assoc snake :body (conj body (mapv + (last body) direction))))))
+
+(defn rand-snake
+    "this function creates a new random snake, based only on the board"
+    [[x y]]
+    (let [valid-directons [[0 1][0 -1][-1 0][1 0]]
+            snake (atom {})
+            start-position [[(rand-int x)(rand-int y)]]]
+    (reset! snake (assoc @snake :direction (rand-nth valid-directons)))
+    (reset! snake (assoc @snake :body (conj start-position (valid-head (mapv + (:direction @snake) start-position) [x y]))))
+    (dotimes [n 4] (swap! snake grow-snake))
+    @snake
+    ))
+
+
+
 (def snake {:direction [1 0]
-            :body      [[5 2] [4 2] [3 2] [2 2] [1 2] [0 2]]})
+            :body      [[3 2] [2 2] [1 2] [0 2]]})
 
 (def sweets {:max-number 20
              :locations []})
 
 (def initial-state {:board             board
-                    :snake             snake
+                    :snake             (rand-snake board)
                     :sweets            sweets
                     :points            0
                     :game-running?     false
@@ -39,7 +70,7 @@
                     :stored-direction  false})
 
 (def restart-state {:board             board
-                    :snake             snake
+                    :snake             (rand-snake board)
                     :sweets            sweets
                     :points            0
                     :game-running?     true
@@ -65,16 +96,6 @@
 (regsub :points)
 (regsub :snake)
 (regsub :game-running?)
-
-(defn valid-head
-  "Change the value of the head if it may run out of the board"
-  [head board]
-  (cond
-    (= (first head) -1) [(- (first board) 1) (second head)]
-    (= (first head) (first board)) [0 (second head)]
-    (= (second head) -1) [(first head) (- (second board) 1)]
-    (= (second head) (second board)) [(first head) 0]
-    :else head))
 
 (defn move-snake
   "Move the whole snake positions and directions of all snake elements"
@@ -105,13 +126,6 @@
   (let [head (first (:body snake))
         body (rest (:body snake))]
     (some #(= head %) body)))
-
-(defn grow-snake
-  "Computes a value for the tail position and returns whole snake"
-  [{:keys [body] :as snake}]
-  (let [last-2 (take-last 2 body)]
-    (let [direction (mapv - (second last-2) (first last-2))]
-      (assoc snake :body (conj body (mapv + (last body) direction))))))
 
 (defn remove-sweet
   "Remove a certain sweet cause it's been eaten"
