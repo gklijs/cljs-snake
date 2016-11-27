@@ -220,7 +220,7 @@
   :game-running?
   (fn
     [db _]
-    (:game-running?r db)))
+    (:game-running? db)))
 
 
 (reg-sub
