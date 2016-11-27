@@ -1,7 +1,7 @@
 (ns snake_game.core
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as reagent :refer [atom]]
-            [re-frame.core :refer [register-handler register-sub subscribe dispatch dispatch-sync]]
+            [re-frame.core :refer [reg-event-db reg-sub-raw subscribe dispatch dispatch-sync]]
             [goog.events :as events]))
 
 (enable-console-print!)
@@ -34,11 +34,19 @@
                     :snake             snake
                     :sweets            sweets
                     :points            0
+                    :game-running?     false
+                    :direction-changed false
+                    :stored-direction  false})
+
+(def restart-state {:board             board
+                    :snake             snake
+                    :sweets            sweets
+                    :points            0
                     :game-running?     true
                     :direction-changed false
                     :stored-direction  false})
 
-(register-handler
+(reg-event-db
   :initialize
   (fn
     [db _]
@@ -46,7 +54,7 @@
 
 (defn regsub
   [field]
-  (register-sub
+  (reg-sub-raw
     field
     (fn
       [db _]
@@ -89,7 +97,7 @@
                               (dispatch [:change-direction (key-code->move key-code)]))))))
 
 (defonce snake-moving
-         (js/setInterval #(dispatch [:next-state]) 50))
+         (js/setInterval #(dispatch [:next-state]) 150))
 
 (defn collisions
   "Todo this should be changed to check if the head isn't hitting another snake, itself is fine."
@@ -139,7 +147,7 @@
           (assoc :stored-direction false)))
     db))
 
-(register-handler
+(reg-event-db
   :change-direction
   (fn [{:keys [snake direction-changed] :as db} [_ new-direction]]
     (if (not direction-changed)
@@ -150,7 +158,7 @@
         db)
       (assoc db :stored-direction new-direction))))
 
-(register-handler
+(reg-event-db
   :next-state
   (fn
     [{:keys [snake board] :as db} _]
@@ -164,6 +172,15 @@
                   (process-movement after-move))
             (update :sweets handle-sweets snake board)))
       db)))
+
+(reg-event-db
+  :switch-game-running
+  (fn
+    [{:keys [game-running? snake] :as db} _]
+        (if (collisions snake)
+        (merge db restart-state)
+        (assoc-in db [:game-running?] (not (:game-running? db)))
+        )))
 
 (defn render-board
   "Renders the board area of the game"
@@ -194,25 +211,25 @@
       []
       [:div.score (str "Score: " @points)])))
 
-(defn game-over
-  "Renders the game overlay if the game is finished"
+(defn start-stop
+  "Renders the button to start/pause the game"
   []
-  (let [game-state (subscribe [:game-running?])]
+  (let [game-running? (subscribe [:game-running?])]
     (fn
       []
-      (if @game-state
-        [:div]
-        [:div.overlay
-         [:div.play
-          [:h1 "↺"]]]))))
+      [:button.btn.btn-primary {:type "button" :on-click #(dispatch [:switch-game-running])}
+      (str (if @game-running? "Pause" "Start"))
+      ])))
 
 (defn game
   "The main rendering function"
   []
   [:div
-   [score]
-   [render-board]
-   [game-over]])
+   [:div.container.controls [:div.row.flex-items-xs-center
+       [:div.col-xs.board-element [score]]
+       [:div.col-xs.board-element [start-stop]]
+    ]]
+   [render-board]])
 
 (defn run
   "The main app function"
