@@ -1,17 +1,12 @@
 (ns snake_game.core
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as reagent :refer [atom]]
-            [re-frame.core :refer [reg-event-db reg-sub-raw subscribe dispatch dispatch-sync]]
+            [re-frame.core :refer [reg-event-db path reg-sub subscribe dispatch dispatch-sync]]
             [goog.events :as events]))
 
 (enable-console-print!)
 
-(def board [50 40])
-
-(defn logjs
-    "This function prints an argument to the js console"
-    [argument]
-    (.log js/console (clj->js argument)))
+;; -- Pure functions ---------------------------------------------------------
 
 (defn rand-free-position
   "This function takes the snake, locations of the sweets and the board-size as arguments, and returns a random position not colliding with the snake body or sweets"
@@ -53,72 +48,11 @@
     @snake
     ))
 
-
-
-(def snake {:direction [1 0]
-            :body      [[3 2] [2 2] [1 2] [0 2]]})
-
-(def sweets {:max-number 20
-             :locations []})
-
-(def initial-state {:board             board
-                    :snake             (rand-snake board)
-                    :sweets            sweets
-                    :points            0
-                    :game-running?     false
-                    :direction-changed false
-                    :stored-direction  false})
-
-(def restart-state {:board             board
-                    :snake             (rand-snake board)
-                    :sweets            sweets
-                    :points            0
-                    :game-running?     true
-                    :direction-changed false
-                    :stored-direction  false})
-
-(reg-event-db
-  :initialize
-  (fn
-    [db _]
-    (merge db initial-state)))
-
-(defn regsub
-  [field]
-  (reg-sub-raw
-    field
-    (fn
-      [db _]
-      (reaction (field @db)))))
-
-(regsub :board)
-(regsub :sweets)
-(regsub :points)
-(regsub :snake)
-(regsub :game-running?)
-
 (defn move-snake
   "Move the whole snake positions and directions of all snake elements"
-  [{:keys [direction body] :as snake}]
+  [{:keys [direction body] :as snake} board]
   (let [head-new-position (valid-head (mapv + direction (first body)) board) ]
     (update-in snake [:body] #(into [] (drop-last (cons head-new-position body))))))
-
-(def key-code->move
-  "Mapping from the integer key code to the direction vector corresponding to that key"
-  {38 [0 -1]
-   40 [0 1]
-   39 [1 0]
-   37 [-1 0]})
-
-(defonce key-handler
-         (events/listen js/window "keydown"
-                        (fn [e]
-                          (let [key-code (.-keyCode e)]
-                            (when (contains? key-code->move key-code)
-                              (dispatch [:change-direction (key-code->move key-code)]))))))
-
-(defonce snake-moving
-         (js/setInterval #(dispatch [:next-state]) 150))
 
 (defn collisions
   "Todo this should be changed to check if the head isn't hitting another snake, itself is fine."
@@ -161,6 +95,63 @@
           (assoc :stored-direction false)))
     db))
 
+;; -- Js functions ---------------------------------------------------------
+
+(defn logjs
+    "This function prints an argument to the js console"
+    [argument]
+    (.log js/console (clj->js argument)))
+
+(def key-code->move
+  "Mapping from the integer key code to the direction vector corresponding to that key"
+  {38 [0 -1]
+   40 [0 1]
+   39 [1 0]
+   37 [-1 0]})
+
+(defonce key-handler
+         (events/listen js/window "keydown"
+                        (fn [e]
+                          (let [key-code (.-keyCode e)]
+                            (when (contains? key-code->move key-code)
+                              (dispatch [:change-direction (key-code->move key-code)]))))))
+
+(defonce snake-moving
+         (js/setInterval #(dispatch [:next-state]) 150))
+
+;; -- Create and set initial values ---------------------------------------------------------
+
+(def initial-board [50 40])
+
+(def initial-sweets {:max-number 20
+             :locations []})
+
+(def initial-snake (rand-snake initial-board))
+
+(def initial-state {:board             initial-board
+                    :snake             initial-snake
+                    :sweets            initial-sweets
+                    :points            0
+                    :game-running?     false
+                    :direction-changed false
+                    :stored-direction  false})
+
+(def restart-state {:board             initial-board
+                    :snake             initial-snake
+                    :sweets            initial-sweets
+                    :points            0
+                    :game-running?     true
+                    :direction-changed false
+                    :stored-direction  false})
+
+;; -- Event Handlers ----------------------------------------------------------
+
+(reg-event-db
+  :initialize
+  (fn
+    [db _]
+    (merge db initial-state)))
+
 (reg-event-db
   :change-direction
   (fn [{:keys [snake direction-changed] :as db} [_ new-direction]]
@@ -181,7 +172,7 @@
         (assoc-in db [:game-running?] false)
         (-> db
             (pop-stored-direction)
-            (update :snake move-snake)
+            (update :snake move-snake board)
             (as-> after-move
                   (process-movement after-move))
             (update :sweets handle-sweets snake board)))
@@ -195,6 +186,56 @@
         (merge db restart-state)
         (assoc-in db [:game-running?] (not (:game-running? db)))
         )))
+
+;; -- Subscription Handlers ---------------------------------------------------
+
+(reg-sub
+  :board
+  (fn
+    [db _]
+    (:board db)))
+
+
+(reg-sub
+  :snake
+  (fn
+    [db _]
+    (:snake db)))
+
+
+(reg-sub
+  :sweets
+  (fn
+    [db _]
+    (:sweets db)))
+
+(reg-sub
+  :points
+  (fn
+    [db _]
+    (:points db)))
+
+
+(reg-sub
+  :game-running?
+  (fn
+    [db _]
+    (:game-running?r db)))
+
+
+(reg-sub
+  :direction-changed
+  (fn
+    [db _]
+    (:direction-changed db)))
+
+(reg-sub
+  :stored-direction
+  (fn
+    [db _]
+    (:stored-direction db)))
+
+;; -- View Components ---------------------------------------------------------
 
 (defn render-board
   "Renders the board area of the game"
@@ -244,6 +285,8 @@
        [:div.col-xs.board-element [start-stop]]
     ]]
    [render-board]])
+
+;; -- Entry Point -------------------------------------------------------------
 
 (defn run
   "The main app function"
